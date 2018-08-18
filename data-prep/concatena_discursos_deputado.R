@@ -2,8 +2,9 @@ library(dplyr)
 library(stringr)
 
 data_folder <- './Dados'
+ano <- 2018
 
-input_path <- paste(data_folder,'parsed_discurso_2017_dit.csv',sep='/')
+input_path <- paste(data_folder,paste0('parsed_discurso_', ano, '_dit.csv'),sep='/')
 
 discursos_deputados <- read.csv2(input_path) %>%
   mutate(deputado = trimws(gsub("\\(.*", "", deputado)))
