@@ -4,38 +4,35 @@ from nltk.tokenize import word_tokenize
 from datetime import date,datetime
 import csv 
 import base64
+from sklearn.cluster import k_means
+import numpy as np
+
 csv.field_size_limit(100000000)
 
 
 data = []
 
-with open('parsed_discurso_2018_dit.csv', 'r') as f:
+with open('discursos_concatenados_2018.csv', 'r') as f:
     reader = csv.reader(f,delimiter=';')
     data = list(reader)
+    colums = data.pop(0)
 
-discurssos = []
-# for d in data:
-#     discurssos.append(d[0].split(";"))
-
+deputados_discursos = {}
 body = []
 
-for i in range(len(discurssos)):
-        try:
-            if(len(discurssos[i][5]) > 15):
-                body.append(str(base64.b64decode(discurssos[i][5])))
-        except:
-            pass
+for d in data:
+    body.append(d[4])
+
+stopwords = nltk.corpus.stopwords.words("portuguese")
+
+regex = "[a-zA-ZçÇãÃõÕáÁéÉíÍóÓúÚâÂêÊîÎôÔûÛàÀ]+"
 
 BASEDIR = os.getcwd()
-if (os.path.exists(BASEDIR+"/discurssos_dict.dict") and (os.path.exists(BASEDIR+"/discurssos_corpus.dict") & (os.path.exists(BASEDIR+"/model_discurssos.dict") ):
-   dictionary = corpora.Dictionary.load(BASEDIR+"/discurssos_dict.dict")
-   corpus = corpora.MmCorpus(BASEDIR+"/discurssos_corpus.mm")
-   lsi = models.LsiModel.load(BASEDIR+"/model_discurssos.lsi")
+if (os.path.exists(BASEDIR+"/discursos_dict.dict")):
+   dictionary = corpora.Dictionary.load(BASEDIR+"/discursos_dict.dict")
+   corpus = corpora.MmCorpus(BASEDIR+"/discursos_corpus.mm")
+   lsi = models.LsiModel.load(BASEDIR+"/model_discursos.lsi")
 else:
-    stopwords = nltk.corpus.stopwords.words("portuguese")
-
-    regex = "[a-zA-ZçÇãÃõÕáÁéÉíÍóÓúÚâÂêÊîÎôÔûÛàÀ]+"
-
     documents_without_stopwords = [[w.lower() for w in word_tokenize(text) if w not in stopwords] 
                 for text in body]
     documents = []
@@ -45,26 +42,35 @@ else:
             if re.search(regex, token):
                 filtered_tokens.append(token)
         documents.append(filtered_tokens)
+    from gensim.corpora import Dictionary
+    from gensim.models import Word2Vec
+    from gensim.similarities import SoftCosineSimilarity
 
     dictionary = corpora.Dictionary(documents)
 
-    dictionary.save(BASEDIR+"/discurssos_dict.dict")
+    dictionary.save(BASEDIR+"/discursos_dict.dict")
 
     corpus = [dictionary.doc2bow(document) for document in documents]
 
-    corpora.MmCorpus.serialize(BASEDIR+"/discurssos_corpus.mm", corpus)
+    corpora.MmCorpus.serialize(BASEDIR+"/discursos_corpus.mm", corpus)
 
     tf_idf = models.TfidfModel(corpus)
 
     corpus_tfidf = tf_idf[corpus]
 
-    lsi = gensim.models.LsiModel(corpus_tfidf, id2word=dictionary)
+    lsi = gensim.models.LsiModel(corpus_tfidf, id2word=dictionary,num_topics=25)
 
-    lsi.save(BASEDIR+"/model_discurssos.lsi") 
+    lsi.save(BASEDIR+"/model_discursos.lsi") 
 
-vec_lsi = lsi[corpus_tfidf[0]] # convert the query to LSI space 300/100/0
+index = similarities.Similarity(BASEDIR+"/index",lsi[corpus],num_features=len(dictionary),num_best=len(data))
 
-# index = similarities.MatrixSimilarity(corpus= lsi[corpus],num_best=5)
-index = similarities.Similarity(BASEDIR+"/index",lsi[corpus],num_features=len(dictionary),num_best=5)
-sims = index[vec_lsi]
+with open("deputados.csv", 'w') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    spamwriter.writerow(["id", "nome", "partido", "idComparado","nomeComparado", "partidoComparado","pontuação"])
+    for j in range(len(data)):
+        vec_lsi = lsi[corpus_tfidf[j]]
+        sims = index[vec_lsi]
+        for s in sims:
+            i = s[0]
+            spamwriter.writerow([data[j][0],data[j][1], data[j][2], data[s[0]][0],data[s[0]][1],data[s[0]][2], s[1]])
 
