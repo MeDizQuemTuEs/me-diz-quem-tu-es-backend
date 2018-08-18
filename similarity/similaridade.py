@@ -10,18 +10,21 @@ import numpy as np
 csv.field_size_limit(100000000)
 
 
+def open_file(name_file,data):
+    with open(name_file,'r') as f:
+        reader = csv.reader(f,delimiter=';')
+        lista_por_arquivo = list(reader)
+        lista_por_arquivo.pop(0)
+        data +=  lista_por_arquivo
+
 data = []
 
-with open('discursos_concatenados_2018.csv', 'r') as f:
-    reader = csv.reader(f,delimiter=';')
-    data = list(reader)
-    colums = data.pop(0)
+open_file('discursos_sep.csv',data)
 
-deputados_discursos = {}
 body = []
 
 for d in data:
-    body.append(d[4])
+    body.append(d[2])
 
 stopwords = nltk.corpus.stopwords.words("portuguese")
 
@@ -42,9 +45,6 @@ else:
             if re.search(regex, token):
                 filtered_tokens.append(token)
         documents.append(filtered_tokens)
-    from gensim.corpora import Dictionary
-    from gensim.models import Word2Vec
-    from gensim.similarities import SoftCosineSimilarity
 
     dictionary = corpora.Dictionary(documents)
 
@@ -55,22 +55,24 @@ else:
     corpora.MmCorpus.serialize(BASEDIR+"/discursos_corpus.mm", corpus)
 
     tf_idf = models.TfidfModel(corpus)
-
+    tf_idf.save(BASEDIR+"/tf_idf_model_discursos.mm")
     corpus_tfidf = tf_idf[corpus]
 
-    lsi = gensim.models.LsiModel(corpus_tfidf, id2word=dictionary,num_topics=25)
+    lsi = gensim.models.LsiModel(corpus_tfidf, id2word=dictionary,num_topics=300)
 
     lsi.save(BASEDIR+"/model_discursos.lsi") 
 
 index = similarities.Similarity(BASEDIR+"/index",lsi[corpus],num_features=len(dictionary),num_best=len(data))
+vec_lsi = lsi[corpus_tfidf[0]]
+sims = index[vec_lsi]
 
-with open("deputados.csv", 'w') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(["id", "nome", "partido", "idComparado","nomeComparado", "partidoComparado","pontuação"])
-    for j in range(len(data)):
-        vec_lsi = lsi[corpus_tfidf[j]]
-        sims = index[vec_lsi]
-        for s in sims:
-            i = s[0]
-            spamwriter.writerow([data[j][0],data[j][1], data[j][2], data[s[0]][0],data[s[0]][1],data[s[0]][2], s[1]])
-
+# from gensim.corpora import Dictionary
+# from gensim.models import Word2Vec
+# from gensim.similarities import SoftCosineSimilarity
+# model = Word2Vec(documents, size=20, min_count=1)  # train word-vectors
+# dictionary = Dictionary(documents)
+# bow_corpus = [dictionary.doc2bow(document) for document in documents]
+# similarity_matrix = model.wv.similarity_matrix(dictionary)  # construct similarity matrix
+# index = SoftCosineSimilarity(bow_corpus, similarity_matrix, num_best=10)
+# # Make a query.
+# query = 'graph trees computer'.split()
