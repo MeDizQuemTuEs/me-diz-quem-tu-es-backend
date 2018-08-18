@@ -1,8 +1,9 @@
-source("./DadosDeDiscurso/05_EncodeDecode.R")
+source("./data-prep/05_EncodeDecode.R")
 
 if(!require(qdap)) { install.packages('qdap') }
+if(!require(dplyr)) { install.packages('dplyr') }
 
-pasta <- "./DadosDeDiscurso/Dados/"
+pasta <- "./Dados/"
 
 # monta a string de formatacao a ser retirada
 str_retirar <- function(texto){
@@ -27,12 +28,13 @@ str_retirar <- function(texto){
   retirar
 }
 
-for(ano in c(2018)){
+for(ano in c(2017)){
   print(paste("Início:", ano))
   
   arquivo <- paste0(pasta, "discurso_", ano,"_dit.csv")
   arquivo_parsed <- paste0(pasta, "parsed_discurso_", ano,"_dit.csv")
-  discursos <- read.csv2(arquivo, sep=";", header = FALSE, colClasses = "character")
+  discursos <- read.csv2(arquivo, sep=";", header = FALSE, colClasses = "character", quote = "") %>%
+    mutate_all(funs(gsub("\"", "", .)))
   
   colnames(discursos) <- c("id", "deputado", "partido", "uf", "timestamp", "Discurso")
   
