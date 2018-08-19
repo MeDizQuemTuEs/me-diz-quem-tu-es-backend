@@ -21,7 +21,7 @@ open_file('discursos_concat.csv',data)
 
 body = []
 for d in data:
-    body.append(d[4])
+    body.append(d[3])
 
 stopwords = nltk.corpus.stopwords.words("portuguese")
 
@@ -63,11 +63,32 @@ lsi.save(BASEDIR+"/model_discursos.lsi")
 index = similarities.Similarity(BASEDIR+"/index",lsi[corpus],num_features=len(dictionary),num_best=len(data))
 with open("deputados.csv", 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(["id", "nome", "partido", "idComparado","nomeComparado", "partidoComparado","pontuacão"])
+    spamwriter.writerow(["id", "nome", "partido", "idComparado","nomeComparado", "partidoComparado","pontuacao"])
     for j in range(len(data)):
         vec_lsi = lsi[corpus_tfidf[j]]
         sims = index[vec_lsi]
         for s in sims:
             i = s[0]
-            spamwriter.writerow([data[j][0],data[j][1], data[j][2], data[s[0]][0],data[s[0]][1],data[s[0]][2], s[1]])
+            spamwriter.writerow([j,data[j][0], data[j][1], i,data[s[0]][0],data[s[0]][1], s[1]])
 
+topicos = [['lula','violência','mulher','petrobrás'],
+['lula','golpe','petrobrás'],
+['lula','educação'],
+['lula','educação'],
+['mulher','lula','violência','petrobrás'],
+['consumidor','pesca'],
+['pesca','rodovia'],
+['feliciano','petrobrás','agricultura'],
+['igreja','israel'],
+['bolsonaro','policia','deus'],
+['lula'],
+['igreja','lula','eletrobrás'],
+['igreja','pesca'],
+['mulher','caminhoneiro','consumidor','agricultura'],
+['igreja','petrobrás','consumidor'],
+['esporte','turismo','pesca'],
+['turismo','imigração','segurança'],
+['turismo','pesca','imigração','esporte','segurança'],
+['consumidor','mulher','pesca','segurança'],
+['turismo','pesca','agricultura']
+]
