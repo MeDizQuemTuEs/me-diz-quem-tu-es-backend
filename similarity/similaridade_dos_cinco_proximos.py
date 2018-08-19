@@ -17,22 +17,18 @@ def open_file(name_file,data):
 
 data = []
 
-open_file('parsed_discurso_2017_dit_concat.csv',data)
+open_file('discursos_sep.csv',data)
 
 body = []
 for d in data:
-    body.append(d[3])
+    body.append(d[5])
 
 stopwords = nltk.corpus.stopwords.words("portuguese")
 
 regex = "[a-zA-ZçÇãÃõÕáÁéÉíÍóÓúÚâÂêÊîÎôÔûÛàÀ]+"
 
 BASEDIR = os.getcwd()
-# if (os.path.exists(BASEDIR+"/discursos_dict.dict")):
-#    dictionary = corpora.Dictionary.load(BASEDIR+"/discursos_dict.dict")
-#    corpus = corpora.MmCorpus(BASEDIR+"/discursos_corpus.mm")
-#    lsi = models.LsiModel.load(BASEDIR+"/model_discursos.lsi")
-# else:
+
 documents_without_stopwords = [[w.lower() for w in word_tokenize(text) if w not in stopwords] 
             for text in body]
     
@@ -45,45 +41,18 @@ for document in documents_without_stopwords:
     documents.append(filtered_tokens)
 
 dictionary = corpora.Dictionary(documents)
-
 corpus = [dictionary.doc2bow(document) for document in documents]
-
 tf_idf = models.TfidfModel(corpus)
-
 corpus_tfidf = tf_idf[corpus]
-
 lsi = gensim.models.LsiModel(corpus_tfidf, id2word=dictionary,num_topics=20)
-
-
 index = similarities.Similarity(BASEDIR+"/index",lsi[corpus],num_features=len(dictionary),num_best=len(data))
-with open("result_discurso_2017_dit_concat.csv", 'w') as csvfile:
+with open("result_discurso__sep.csv", 'w') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
-    spamwriter.writerow(["id", "nome", "partido", "idComparado","nomeComparado", "partidoComparado","pontuacao"])
+    spamwriter.writerow(["id","idCoparado","pontuacao"])
     for j in range(len(data)):
         vec_lsi = lsi[corpus_tfidf[j]]
         sims = index[vec_lsi]
-        for s in sims:
-            i = s[0]
-            spamwriter.writerow([j,data[j][0], data[j][1], i,data[s[0]][0],data[s[0]][1], s[1]])
-
-# topicos = [['lula','violência','mulher','petrobrás'],
-# ['lula','golpe','petrobrás'],
-# ['lula','educação'],
-# ['lula','educação'],
-# ['mulher','lula','violência','petrobrás'],
-# ['consumidor','pesca'],
-# ['pesca','rodovia'],
-# ['feliciano','petrobrás','agricultura'],
-# ['igreja','israel'],
-# ['bolsonaro','policia','deus'],
-# ['lula'],
-# ['igreja','lula','eletrobrás'],
-# ['igreja','pesca'],
-# ['mulher','caminhoneiro','consumidor','agricultura'],
-# ['igreja','petrobrás','consumidor'],
-# ['esporte','turismo','pesca'],
-# ['turismo','imigração','segurança'],
-# ['turismo','pesca','imigração','esporte','segurança'],
-# ['consumidor','mulher','pesca','segurança'],
-# ['turismo','pesca','agricultura']
-# ]
+        if (len(vec_lsi)>0):
+            for k in range(5):
+                i = sims[k][0]
+                spamwriter.writerow([data[j][0], i, sims[k][1]])
