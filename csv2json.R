@@ -1,0 +1,5 @@
+library(jsonlite)
+library(readr)
+discursos_sep <- read.csv2('/home/tarciso/workspace/me-diz-quem-tu-es/Dados/discursos_sep.csv')
+discursos_json <- toJSON(discursos_sep)
+write_json(x = discursos_json, path='/home/tarciso/workspace/me-diz-quem-tu-es/Dados/discursos_sep.json')
