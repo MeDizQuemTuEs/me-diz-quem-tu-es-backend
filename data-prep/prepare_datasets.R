@@ -2,6 +2,7 @@ library(dplyr)
 library(stringr)
 
 data_folder <- './Dados'
+MIN_NUM_DISCURSOS = 10
 anos <-c(2016:2018)
 
 output_path_discursos_sep = paste(data_folder,'discursos_sep.csv',sep='/')
@@ -33,7 +34,7 @@ discursos_deputados_qtd <- discursos_sep_clean %>%
             uf = last(uf))
 
 selected_deputados <- discursos_deputados_qtd %>%
-  filter(num_discursos >= 10)
+  filter(num_discursos >= MIN_NUM_DISCURSOS)
 
 discursos_deputados_selecionados_concat <- discursos_sep_clean %>%
   select(-timestamp, -partido, -uf) %>%
