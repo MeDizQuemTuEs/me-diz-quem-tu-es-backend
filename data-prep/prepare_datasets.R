@@ -17,9 +17,15 @@ for(ano in anos) {
     rbind(discursos_sep,.)
 }
 
-write.csv2(discursos_sep,output_path_discursos_sep, row.names=F)
+discursos_sep_clean <- discursos_sep %>%
+  rowwise() %>%
+  mutate(discurso = sub(".*?-", "", Discurso)) %>%
+  ungroup() %>%
+  select(-Discurso)
 
-discursos_deputados_qtd <- discursos_sep %>%
+write.csv2(discursos_sep_clean,output_path_discursos_sep, row.names=F)
+
+discursos_deputados_qtd <- discursos_sep_clean %>%
   group_by(deputado) %>%
   arrange(timestamp) %>%
   summarise(num_discursos = n(),
@@ -29,10 +35,10 @@ discursos_deputados_qtd <- discursos_sep %>%
 selected_deputados <- discursos_deputados_qtd %>%
   filter(num_discursos >= 10)
 
-discursos_deputados_selecionados_concat <- discursos_sep %>%
+discursos_deputados_selecionados_concat <- discursos_sep_clean %>%
   select(-timestamp, -partido, -uf) %>%
   merge(selected_deputados) %>%
   group_by(deputado, partido, uf) %>%
-  summarise(discurso_total = paste(Discurso, collapse=' '))
+  summarise(discurso_total = paste(discurso, collapse=' '))
 
 write.csv2(discursos_deputados_selecionados_concat,output_path_discursos_concat, row.names=F)
